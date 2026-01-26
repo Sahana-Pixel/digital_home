@@ -40,8 +40,8 @@ export const ROOMS: RoomConfig[] = [
     name: "College",
     emoji: "🎓",
     tagline: "Stay on top of your academics",
-    card: "#6EBFB5",
-    accent: "#24A19C",
+    card: "#51e5ff",
+    accent: "#51e5ff",
     muted: "#BBDEFB",
   },
   {
