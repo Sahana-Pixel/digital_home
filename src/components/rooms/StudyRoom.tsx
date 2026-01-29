@@ -6,6 +6,7 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 import type { RoomConfig } from "@/lib/rooms";
 import Link from "next/link";
+import { ArrowLeft, Plus, Trash2, Calendar, Check } from "lucide-react";
 
 interface StudyTask {
   id: string;
@@ -39,9 +40,9 @@ export function StudyRoom({ room }: { room: RoomConfig }) {
   const [newTaskTitle, setNewTaskTitle] = useState("");
 
   const dateStr = new Date().toLocaleDateString("en-GB", {
-    weekday: "short",
+    weekday: "long",
     day: "numeric",
-    month: "short",
+    month: "long",
   });
 
   useEffect(() => {
@@ -156,122 +157,179 @@ export function StudyRoom({ room }: { room: RoomConfig }) {
     }
   };
 
-  if (loading) {
-    return (
-      <main className="min-h-screen flex items-center justify-center">
+  if (loading) return (
+    <main className="min-h-screen flex items-center justify-center bg-[#0B1220]">
+      <div className="flex flex-col items-center gap-3">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#7DD3FC] border-t-transparent" />
-      </main>
-    );
-  }
+        <p className="text-[#7DD3FC] text-xs uppercase tracking-widest opacity-80">Focus In...</p>
+      </div>
+    </main>
+  );
 
   return (
-    <main className="min-h-screen">
-      <header
-        className="px-6 py-6 rounded-b-2xl"
-        style={{ background: `linear-gradient(135deg, ${room.card} 0%, ${room.muted} 100%)`, color: "#0B1220" }}
-      >
-        <div className="max-w-4xl mx-auto flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold">{room.emoji} {room.name} Room</h1>
-            <p className="mt-1 text-[#0B1220]/80">&ldquo;{room.tagline}&rdquo;</p>
-            <p className="mt-2 text-sm opacity-70">{dateStr}</p>
+    <main className="min-h-screen bg-[#050912] text-[#E2E8F0] selection:bg-[#9ADCFF]/20">
+
+      {/* 1. Header Section */}
+      <header className="px-6 py-8 md:py-12 border-b border-white/[0.05] bg-[#050912]/80 backdrop-blur-md sticky top-0 z-50">
+        <div className="max-w-4xl mx-auto w-full">
+          <div className="flex items-center justify-between mb-4">
+            <Link
+              href="/dashboard"
+              className="group flex items-center gap-2 text-sm text-[#64748B] hover:text-[#E2E8F0] transition-colors"
+            >
+              <div className="p-1.5 rounded-full bg-white/5 border border-white/5 group-hover:bg-white/10 transition-colors">
+                <ArrowLeft className="w-4 h-4" />
+              </div>
+              <span>Dashboard</span>
+            </Link>
+
+            <div className="text-xs font-mono text-[#64748B] tracking-wider uppercase opacity-60">
+              {dateStr}
+            </div>
           </div>
-          <Link href="/dashboard" className="text-sm font-medium opacity-80 hover:opacity-100 transition-opacity" style={{ color: "#0B1220" }}>
-            ← Dashboard
-          </Link>
+
+          <div className="flex items-start gap-4">
+            <div className="p-3 rounded-2xl bg-[#0F172A] border border-white/5 shadow-lg">
+              <span className="text-3xl filter drop-shadow-md">{room.emoji}</span>
+            </div>
+            <div>
+              <h1 className="text-3xl md:text-4xl font-light text-[#F8FAFC] tracking-tight">{room.name}</h1>
+              <p className="text-[#94A3B8] text-sm mt-1 font-light tracking-wide">{room.tagline}</p>
+            </div>
+          </div>
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
+      {/* 2. Main Content Area */}
+      <div className="max-w-4xl mx-auto px-6 py-12 space-y-10">
+
         {/* Add Task Input */}
-        <div className="flex gap-2">
+        <div className="bg-[#0F172A]/40 rounded-2xl p-2 border border-white/5 flex gap-2 focus-within:ring-2 focus-within:ring-[#9ADCFF]/20 transition-all shadow-inner">
           <input
             type="text"
             value={newTaskTitle}
             onChange={(e) => setNewTaskTitle(e.target.value)}
-            placeholder="Enter task title..."
-            className="flex-1 rounded-xl px-4 py-3 bg-[#0F172A] text-[#F1F5F9] outline-none"
+            onKeyDown={(e) => e.key === "Enter" && handleAddTask()}
+            placeholder="What is your focus for today?"
+            className="flex-1 bg-transparent px-4 py-3 text-[#F1F5F9] placeholder:text-[#475569] outline-none font-light"
           />
           <button
             type="button"
             onClick={handleAddTask}
-            className="px-4 rounded-xl font-medium"
-            style={{ backgroundColor: room.accent, color: "#0B1220" }}
+            disabled={!newTaskTitle.trim()}
+            className="px-4 py-2 rounded-xl bg-[#050912] border border-white/10 text-[#E2E8F0] hover:bg-[#9ADCFF] hover:text-[#050912] hover:border-[#9ADCFF] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Add
+            <Plus className="w-5 h-5" />
           </button>
         </div>
 
         {/* Tasks List */}
-        {tasks.length === 0 ? (
-          <div className="rounded-2xl p-8 text-center" style={{ backgroundColor: "rgba(15, 23, 42, 0.5)", color: "#94A3B8" }}>
-            <p>Nothing here yet.</p>
-            <p className="mt-2 text-sm">Add a task to start tracking.</p>
-          </div>
-        ) : (
-          <ul className="space-y-4">
-            {tasks.map((t) => (
-              <li key={t.id} className="rounded-2xl p-4 transition-all duration-300" style={{ backgroundColor: "rgba(15, 23, 42, 0.5)", borderLeft: `4px solid ${room.accent}` }}>
-                <div className="flex items-center gap-3 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={() => toggle(t.id)}
-                    className="w-6 h-6 rounded-md border-2 flex-shrink-0 flex items-center justify-center transition-colors"
-                    style={{ borderColor: room.accent, backgroundColor: t.done ? room.accent : "transparent" }}
-                  >
-                    {t.done && <span className="text-[#0B1220] text-sm">✓</span>}
-                  </button>
+        <div className="space-y-4">
+          <h2 className="text-xs uppercase tracking-widest text-[#64748B] font-semibold pl-1 mb-6">Active Tasks</h2>
 
-                  <span className={t.done ? "line-through text-[#94A3B8]" : "text-[#F1F5F9]"}>{t.title}</span>
+          {tasks.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 px-4 rounded-3xl border border-dashed border-white/5 bg-white/[0.02]">
+              <div className="w-12 h-12 rounded-full bg-[#0F172A] flex items-center justify-center mb-4 text-[#475569]">
+                <Calendar className="w-5 h-5" />
+              </div>
+              <p className="text-[#94A3B8] text-sm font-light">Your schedule is clear.</p>
+            </div>
+          ) : (
+            <ul className="grid gap-3">
+              {tasks.map((t) => (
+                <li
+                  key={t.id}
+                  className={`
+                    group relative overflow-hidden rounded-2xl p-5 border transition-all duration-300
+                    ${t.done
+                      ? "bg-[#050912] border-white/5 opacity-60"
+                      : "bg-[#0F172A]/40 border-white/5 hover:border-white/10 hover:bg-[#0F172A]/60 hover:shadow-lg"
+                    }
+                  `}
+                >
+                  <div className="flex items-center gap-4 relative z-10">
+                    {/* Checkbox */}
+                    <button
+                      type="button"
+                      onClick={() => toggle(t.id)}
+                      className={`
+                        w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-300
+                        ${t.done
+                          ? "border-[#9ADCFF] bg-[#9ADCFF] scale-100"
+                          : "border-[#475569] hover:border-[#9ADCFF] scale-100"
+                        }
+                      `}
+                    >
+                      {t.done && <Check className="w-3.5 h-3.5 text-[#050912] stroke-[3]" />}
+                    </button>
 
-                  <span className="text-lg" title="Streak">🔥</span>
-                  <span className="text-[#F1F5F9]">{t.streak}</span>
+                    {/* Title */}
+                    <span
+                      className={`
+                        max-w-[60%] truncate font-medium transition-all duration-300 selection:bg-[#9ADCFF]/20
+                        ${t.done ? "text-[#475569] line-through decoration-white/10" : "text-[#E2E8F0]"}
+                      `}
+                    >
+                      {t.title}
+                    </span>
 
-                  <button type="button" onClick={() => toggleYear(t.id)} className="text-sm ml-auto" style={{ color: room.accent }}>
-                    View Year {expandedYear === t.id ? "▲" : "▼"}
-                  </button>
+                    <div className="ml-auto flex items-center gap-4">
+                      {/* Streak Badge */}
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#050912] border border-white/5">
+                        <span className="text-xs" aria-hidden>🔥</span>
+                        <span className="text-xs font-mono text-[#94A3B8]">{t.streak}</span>
+                      </div>
 
-                  {/* Delete button */}
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteTask(t.id)}
-                    className="ml-2 text-red-500 font-bold hover:text-red-400 transition-colors"
-                    title="Delete task"
-                  >
-                    ❌
-                  </button>
-                </div>
+                      {/* Year View Toggle */}
+                      <button
+                        type="button"
+                        onClick={() => toggleYear(t.id)}
+                        className={`
+                          text-xs font-medium tracking-wide transition-colors uppercase
+                          ${expandedYear === t.id ? "text-[#9ADCFF]" : "text-[#475569] hover:text-[#94A3B8]"}
+                        `}
+                      >
+                        {expandedYear === t.id ? "Hide Year" : "History"}
+                      </button>
 
-                {expandedYear === t.id && (
-  <div
-    className="mt-4 grid gap-[1px] w-full"
-    style={{
-      gridTemplateColumns: `repeat(auto-fit, minmax(12px, 1fr))`,
-    }}
-  >
-    {t.yearSquares.slice(0, 365).map((v, i) => (
-      <div
-        key={i}
-        style={{
-          width: "100%",
-          aspectRatio: "1", // keeps square
-          backgroundColor: v ? "#39FF14" : "rgba(148,163,184,0.2)",
-          borderRadius: "2px",
-        }}
-      />
-    ))}
-  </div>
-)}
+                      {/* Delete */}
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteTask(t.id)}
+                        className="p-2 rounded-lg text-[#ef4444]/60 hover:text-[#ef4444] hover:bg-[#ef4444]/10 transition-colors opacity-0 group-hover:opacity-100"
+                        title="Delete task"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
 
-              </li>
-            ))}
-          </ul>
-        )}
+                  {/* Year Grid */}
+                  <div className={`grid transition-all duration-500 ease-in-out ${expandedYear === t.id ? "grid-rows-[1fr] mt-6 opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
+                    <div className="overflow-hidden">
+                      <div className="grid gap-[2px] w-full" style={{ gridTemplateColumns: `repeat(auto-fit, minmax(8px, 1fr))` }}>
+                        {t.yearSquares.slice(0, 365).map((v, i) => (
+                          <div
+                            key={i}
+                            title={v ? "Completed" : "Missed"}
+                            className={`aspect-square rounded-[1px] transition-colors ${v ? "bg-[#39d353]" : "bg-white/[0.03]"}`}
+                          />
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-[#475569] mt-2 font-mono text-center uppercase tracking-widest">Yearly Consistency</p>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
-        {/* Weekly Note */}
-        <div className="rounded-2xl p-5" style={{ backgroundColor: "rgba(15, 23, 42, 0.5)", borderColor: "rgba(148,163,184,0.2)" }}>
-          <h3 className="text-sm font-medium text-[#94A3B8] mb-2">Weekly note</h3>
-          <p className="text-[#F1F5F9] italic">&ldquo;You showed up most days.&rdquo;</p>
+        {/* Footer / Quote */}
+        <div className="mt-12 pt-8 border-t border-white/[0.05] text-center">
+          <p className="text-[#64748B] text-sm italic font-serif opacity-60">
+            "Focus is the art of knowing what to ignore."
+          </p>
         </div>
       </div>
     </main>

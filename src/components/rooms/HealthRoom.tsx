@@ -14,6 +14,15 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import {
+  ArrowLeft,
+  Plus,
+  Trash2,
+  Heart,
+  Activity,
+  CheckCircle2,
+  XCircle
+} from "lucide-react";
 
 interface HealthTask {
   id: string;
@@ -52,9 +61,9 @@ export function HealthRoom({ room }: { room: RoomConfig }) {
   const [newTaskTitle, setNewTaskTitle] = useState("");
 
   const dateStr = new Date().toLocaleDateString("en-GB", {
-    weekday: "short",
+    weekday: "long",
     day: "numeric",
-    month: "short",
+    month: "long",
   });
 
   useEffect(() => {
@@ -167,80 +176,195 @@ export function HealthRoom({ room }: { room: RoomConfig }) {
         else if (v === false) no += 1;
       });
       const total = yes + no;
-      if (total === 0) return { height: 20, positive: true };
+      if (total === 0) return { height: 10, positive: true, empty: true };
       const ratio = Math.abs(yes - no) / total;
-      const height = 30 + ratio * 70;
-      const positive = yes > no;
-      return { height, positive };
+      const height = 20 + ratio * 80;
+      const positive = yes >= no; // default to positive if equal
+      return { height, positive, empty: false };
     });
   }, [tasks]);
 
-  if (loading) return <main className="min-h-screen flex items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-[#7DD3FC] border-t-transparent" /></main>;
+  if (loading) return (
+    <main className="min-h-screen flex items-center justify-center bg-[#020804]">
+      <div className="flex flex-col items-center gap-3">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#A8DF8E] border-t-transparent" />
+        <p className="text-[#A8DF8E] text-xs uppercase tracking-widest opacity-80">Breathe In...</p>
+      </div>
+    </main>
+  );
 
   return (
-    <main className="min-h-screen">
-      <header className="px-6 py-6 rounded-b-2xl" style={{ background: `linear-gradient(135deg, ${room.card} 0%, ${room.muted} 100%)`, color: "#0B1220" }}>
-        <div className="max-w-4xl mx-auto flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold">{room.emoji} {room.name} Room</h1>
-            <p className="mt-1 text-[#0B1220]/80">&ldquo;{room.tagline}&rdquo;</p>
-            <p className="mt-2 text-sm opacity-70">{dateStr}</p>
+    <main className="min-h-screen bg-[#020804] text-[#F0FDF4] selection:bg-[#A8DF8E]/30 relative overflow-hidden">
+      {/* Subtle Organic Bloom Background */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-[-20%] left-[10%] w-[600px] h-[600px] bg-[#A8DF8E]/5 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[0%] right-[0%] w-[500px] h-[500px] bg-[#377D71]/10 rounded-full blur-[100px]" />
+      </div>
+
+      {/* 1. Header Section */}
+      <header className="px-6 py-8 md:py-12 border-b border-white/[0.03] bg-[#020804]/80 backdrop-blur-md sticky top-0 z-50">
+        <div className="max-w-4xl mx-auto w-full">
+          <div className="flex items-center justify-between mb-6">
+            <Link
+              href="/dashboard"
+              className="group flex items-center gap-2 text-sm text-[#86EFAC]/70 hover:text-[#86EFAC] transition-colors"
+            >
+              <div className="p-1.5 rounded-full bg-[#A8DF8E]/10 border border-[#A8DF8E]/10 group-hover:bg-[#A8DF8E]/20 transition-colors">
+                <ArrowLeft className="w-4 h-4" />
+              </div>
+              <span>Dashboard</span>
+            </Link>
+
+            <div className="text-xs font-medium text-[#86EFAC]/50 tracking-wider uppercase">
+              {dateStr}
+            </div>
           </div>
-          <Link href="/dashboard" className="text-sm font-medium opacity-80 hover:opacity-100 transition-opacity" style={{ color: "#0B1220" }}>← Dashboard</Link>
+
+          <div className="flex items-start gap-5">
+            <div className="relative">
+              <div className="absolute inset-0 bg-[#A8DF8E] blur-xl opacity-20 rounded-full" />
+              <div className="relative p-4 rounded-full bg-[#14532D]/30 border border-[#A8DF8E]/20 shadow-[0_0_30px_-5px_rgba(168,223,142,0.1)]">
+                <span className="text-3xl relative z-10">{room.emoji}</span>
+              </div>
+            </div>
+            <div className="pt-1">
+              <h1 className="text-3xl md:text-5xl font-serif text-[#F0FDF4] tracking-tight">{room.name}</h1>
+              <p className="text-[#86EFAC]/60 text-base mt-2 font-light leading-relaxed max-w-lg">
+                &ldquo;{room.tagline}&rdquo;
+              </p>
+            </div>
+          </div>
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
-        {/* Add Task Input */}
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={newTaskTitle}
-            onChange={(e) => setNewTaskTitle(e.target.value)}
-            placeholder="Enter task/habit..."
-            className="flex-1 rounded-xl px-4 py-3 bg-[#0F172A] text-[#F1F5F9] outline-none"
-          />
-          <button type="button" onClick={handleAddTask} className="px-4 rounded-xl font-medium" style={{ backgroundColor: room.accent, color: "#0B1220" }}>
-            Add
-          </button>
-        </div>
+      {/* 2. Main Content Area */}
+      <div className="max-w-4xl mx-auto px-6 py-12 space-y-12 relative z-10">
 
-        {/* Tasks List */}
-        {tasks.length === 0 ? (
-          <div className="rounded-2xl p-8 text-center" style={{ backgroundColor: "rgba(15, 23, 42, 0.5)", color: "#94A3B8" }}>
-            <p>Nothing here yet.</p>
-            <p className="mt-2 text-sm">Add a task to start tracking.</p>
+        {/* Tasks Section */}
+        <section className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-serif text-[#F0FDF4]">Daily Habits</h2>
           </div>
-        ) : (
-          <ul className="space-y-4">
-            {tasks.map((t) => (
-              <li key={t.id} className="rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3" style={{ backgroundColor: "rgba(15, 23, 42, 0.5)" }}>
-                <span className="text-[#F1F5F9] font-medium">{t.title}</span>
-                <div className="flex gap-2">
-                  <button onClick={() => setHabit(t.id, true)} className={`rounded-full px-4 py-1 text-sm font-medium transition-all ${t.value === true ? "opacity-100" : "opacity-40 hover:opacity-70"}`} style={{ backgroundColor: t.value === true ? room.accent : "rgba(148,163,184,0.2)", color: t.value === true ? "#0B1220" : "#94A3B8" }}>✅ Yes</button>
-                  <button onClick={() => setHabit(t.id, false)} className={`rounded-full px-4 py-1 text-sm font-medium transition-all ${t.value === false ? "opacity-100" : "opacity-40 hover:opacity-70"}`} style={{ backgroundColor: t.value === false ? "rgba(239,68,68,0.3)" : "rgba(148,163,184,0.2)", color: t.value === false ? "#F1F5F9" : "#94A3B8" }}>❌ No</button>
-                  <button onClick={() => handleDeleteTask(t.id)} className="ml-2 text-red-500 font-bold hover:text-red-400 transition-colors">❌</button>
+
+          {/* Add Task Input */}
+          <div className="bg-[#14532D]/20 rounded-2xl p-2 pl-5 border border-[#A8DF8E]/10 flex gap-4 items-center focus-within:bg-[#14532D]/30 focus-within:border-[#A8DF8E]/30 transition-all">
+            <div className="h-2 w-2 rounded-full bg-[#A8DF8E] animate-pulse" />
+            <input
+              type="text"
+              value={newTaskTitle}
+              onChange={(e) => setNewTaskTitle(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleAddTask()}
+              placeholder="Cultivate a new habit..."
+              className="flex-1 bg-transparent py-4 text-[#F0FDF4] placeholder:text-[#86EFAC]/30 outline-none font-light tracking-wide text-lg"
+            />
+            <button
+              type="button"
+              onClick={handleAddTask}
+              disabled={!newTaskTitle.trim()}
+              className="p-3 mr-1 rounded-xl bg-[#A8DF8E]/10 text-[#A8DF8E] hover:bg-[#A8DF8E] hover:text-[#064E3B] transition-all disabled:opacity-0"
+            >
+              <Plus className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* List */}
+          {tasks.length === 0 ? (
+            <div className="py-20 flex flex-col items-center justify-center text-center opacity-40">
+              <Heart className="w-12 h-12 mb-4 stroke-1" />
+              <p className="font-light text-lg">Your wellness journey begins with one step.</p>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {tasks.map((t) => (
+                <div
+                  key={t.id}
+                  className="group bg-[#064E3B]/10 hover:bg-[#064E3B]/20 rounded-[1.5rem] p-6 border border-[#A8DF8E]/5 hover:border-[#A8DF8E]/10 transition-all duration-500 flex flex-col md:flex-row md:items-center justify-between gap-4"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`h-1.5 w-1.5 rounded-full ${t.value === true ? "bg-[#4ade80]" : t.value === false ? "bg-red-400" : "bg-white/10"}`} />
+                    <span className={`text-lg font-light tracking-wide ${t.value !== null ? "text-[#F0FDF4]" : "text-[#F0FDF4]/90"}`}>
+                      {t.title}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-end md:self-auto">
+                    <button
+                      onClick={() => setHabit(t.id, true)}
+                      className={`
+                                        h-10 px-5 rounded-full flex items-center gap-2 transition-all duration-300 border
+                                        ${t.value === true
+                          ? "bg-[#4ade80]/20 border-[#4ade80]/50 text-[#4ade80]"
+                          : "bg-transparent border-white/5 text-[#86EFAC]/40 hover:bg-[#4ade80]/10 hover:text-[#4ade80] hover:border-[#4ade80]/30"
+                        }
+                                    `}
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span className="text-sm font-medium">Done</span>
+                    </button>
+
+                    <button
+                      onClick={() => setHabit(t.id, false)}
+                      className={`
+                                        h-10 px-5 rounded-full flex items-center gap-2 transition-all duration-300 border
+                                        ${t.value === false
+                          ? "bg-red-500/20 border-red-500/50 text-red-400"
+                          : "bg-transparent border-white/5 text-[#86EFAC]/40 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30"
+                        }
+                                    `}
+                    >
+                      <XCircle className="w-4 h-4" />
+                      <span className="text-sm font-medium">Skip</span>
+                    </button>
+
+                    <div className="w-[1px] h-6 bg-white/5 mx-2" />
+
+                    <button
+                      onClick={() => handleDeleteTask(t.id)}
+                      className="p-2 rounded-full text-[#F87171] opacity-0 group-hover:opacity-60 hover:!opacity-100 hover:bg-[#F87171]/10 transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-              </li>
-            ))}
-          </ul>
-        )}
+              ))}
+            </div>
+          )}
+        </section>
 
-        {/* Health trend */}
-        <div className="rounded-2xl p-5" style={{ backgroundColor: "rgba(15, 23, 42, 0.5)" }}>
-          <h3 className="text-sm font-medium text-[#94A3B8] mb-4">Health Trend</h3>
-          <div className="h-24 flex items-end gap-1">
+        {/* Trend Section (Hero) */}
+        <section className="bg-[#052e16]/30 backdrop-blur-sm rounded-[2rem] p-8 border border-[#A8DF8E]/10 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.5)]">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3 text-[#A8DF8E]">
+              <Activity className="w-5 h-5" />
+              <h3 className="text-sm font-medium uppercase tracking-widest opacity-80">Vitality Rhythm</h3>
+            </div>
+            <span className="text-xs text-[#86EFAC]/40">Last 10 Days</span>
+          </div>
+
+          <div className="h-32 flex items-end gap-2 md:gap-3">
             {trendData.map((bar, i) => (
-              <div key={i} className="flex-1 rounded-t min-h-[4px] transition-all duration-500" style={{
-                height: `${bar.height}%`,
-                background: bar.positive
-                  ? `linear-gradient(180deg, ${room.accent} 0%, ${room.muted} 100%)`
-                  : "linear-gradient(180deg, rgba(248,113,113,1) 0%, rgba(127,29,29,1) 100%)",
-              }} />
+              <div key={i} className="flex-1 h-full flex flex-col justify-end group cursor-pointer relative">
+                <div
+                  className="w-full rounded-t-full relative overflow-hidden transition-all duration-700 ease-out group-hover:brightness-110"
+                  style={{
+                    height: `${bar.height}%`,
+                    background: bar.empty
+                      ? "rgba(255,255,255,0.05)"
+                      : bar.positive
+                        ? `linear-gradient(to top, rgba(20, 83, 45, 0.4), #4ade80)`
+                        : "linear-gradient(to top, rgba(69, 10, 10, 0.4), #f87171)"
+                  }}
+                >
+                  {/* Glow at top of bar */}
+                  {!bar.empty && (
+                    <div className={`absolute top-0 inset-x-0 h-4 bg-white/30 blur-md`} />
+                  )}
+                </div>
+              </div>
             ))}
           </div>
-          <p className="mt-2 text-xs text-[#94A3B8]">Last 10 days</p>
-        </div>
+        </section>
+
       </div>
     </main>
   );
